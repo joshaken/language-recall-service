@@ -1,0 +1,32 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: language-recall-service
+  cloud:
+    gateway:
+      routes:
+#        - id: chat
+#          uri: lb://language-recall-service
+#          uri: forward:/api/chat
+#          predicates:
+#              - Path=/ollama/api/chat/**
+        - id: ollama-proxy
+          uri: http://localhost:11434
+          predicates:
+            - Path=/ollama/**
+          filters:
+            - StripPrefix=1
+            - DedupeResponseHeader=Access-Control-Allow-Origin Vary
+
+logging:
+  level:
+#    org.springframework.cloud.gateway: DEBUG
+    org.springframework.web.cors: TRACE
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

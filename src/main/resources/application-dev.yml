@@ -1,0 +1,9 @@
+spring:
+  r2dbc:
+    url: r2dbc:h2:file:///./data/app;MODE=PostgreSQL
+    username: sa
+    password: xxxxx
+
+  sql:
+    init:
+      mode: always

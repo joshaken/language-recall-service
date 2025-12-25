@@ -17,4 +17,5 @@ public class ChatRequest {
     private String model;
     private List<OllamaMessageDTO> messages;
     private Map<String, Object> options;
+    private String stream;
 }

@@ -2,7 +2,9 @@ package com.recall.controller;
 
 import com.recall.dto.req.ChatRequest;
 import com.recall.dto.resp.ChatResponse;
+import com.recall.service.IChatService;
 import com.recall.utils.JsonUtil;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -20,23 +22,28 @@ import reactor.core.publisher.Mono;
 @Component
 public class ProxyHandler {
 
-
-    private static final String OLLAMA_BASE_URL = "http://localhost:11434/api";
-
-
-//    @PostMapping(value = "/chat",
+    @Resource
+    private IChatService iChatService;
+    //    @PostMapping(value = "/chat",
 //            produces = MediaType.TEXT_EVENT_STREAM_VALUE
 //    )
     public Mono<ServerResponse> chat(ServerRequest request) {
-        log.info(JsonUtil.toJson(request));
-        // 1. 判断语言
-        // 2. 查 DB
-        // 3. 调 Ollama
-        // 4. 组装响应
-//        return Mono.justOrEmpty("XXXX");
-        ChatResponse chatResponse = new ChatResponse();
-        Flux<ChatResponse> just = Flux.just(chatResponse);
-        return ServerResponse.ok().contentType(MediaType.TEXT_EVENT_STREAM).body(just, ChatResponse.class);
+        return request.bodyToMono(ChatRequest.class)
+                .switchIfEmpty(Mono.error(new IllegalArgumentException("Request body is missing")))
+                .flatMap(chatReq -> {
+                    log.info("Received chat request: {}", JsonUtil.toJson(chatReq));
+
+                    Flux<ChatResponse> responseStream = iChatService.chat(chatReq);
+
+                    return ServerResponse.ok()
+                            .contentType(MediaType.TEXT_EVENT_STREAM)
+                            .body(responseStream, ChatResponse.class);
+                })
+                .onErrorResume(ex -> {
+                    log.error("Error in chat handler", ex);
+                    return ServerResponse.badRequest()
+                            .bodyValue("Error: " + ex.getMessage());
+                });
     }
 
 }

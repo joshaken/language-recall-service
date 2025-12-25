@@ -4,6 +4,8 @@ server:
 spring:
   application:
     name: language-recall-service
+  profiles:
+    active: dev
   cloud:
     gateway:
       routes:

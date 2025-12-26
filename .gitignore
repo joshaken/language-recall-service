@@ -35,3 +35,4 @@ mvnw
 mvnw.cmd
 .mvn/
 .gitattributes
+data/

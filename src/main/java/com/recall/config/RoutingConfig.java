@@ -16,7 +16,9 @@ public class RoutingConfig {
 
     @Bean
     public RouterFunction<ServerResponse> fun(ProxyHandler proxyHandler) {
-        return RouterFunctions.route(POST("/api/chat").and(accept(MediaType.TEXT_EVENT_STREAM)), proxyHandler::chat);
+        return RouterFunctions.route(
+                POST("/api/chat").and(accept(MediaType.TEXT_EVENT_STREAM)
+        ), proxyHandler::chat);
 
     }
 }

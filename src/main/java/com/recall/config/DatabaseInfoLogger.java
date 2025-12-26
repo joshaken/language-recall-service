@@ -1,11 +1,9 @@
 package com.recall.config;
 
 import io.r2dbc.spi.ConnectionFactory;
-import io.r2dbc.spi.ConnectionMetadata;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 

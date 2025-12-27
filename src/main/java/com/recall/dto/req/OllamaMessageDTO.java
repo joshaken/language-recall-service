@@ -1,14 +1,13 @@
 package com.recall.dto.req;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 @NoArgsConstructor
 @Getter
 @Setter
 @ToString
+@AllArgsConstructor
+@Builder
 public class OllamaMessageDTO {
     private String role;    // system | user | assistant
     private String content;

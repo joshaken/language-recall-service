@@ -1,9 +1,6 @@
 package com.recall.dto.req;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import lombok.ToString;
+import lombok.*;
 
 import java.util.List;
 import java.util.Map;
@@ -12,10 +9,12 @@ import java.util.Map;
 @Getter
 @Setter
 @ToString
+@AllArgsConstructor
+@Builder
 public class ChatRequest {
 
     private String model;
     private List<OllamaMessageDTO> messages;
     private Map<String, Object> options;
-    private String stream;
+    private Boolean stream;
 }

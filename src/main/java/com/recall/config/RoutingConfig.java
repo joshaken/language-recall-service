@@ -8,8 +8,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
-import static org.springframework.web.reactive.function.server.RequestPredicates.accept;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 
 @Configuration
 public class RoutingConfig {
@@ -17,8 +16,9 @@ public class RoutingConfig {
     @Bean
     public RouterFunction<ServerResponse> fun(ProxyHandler proxyHandler) {
         return RouterFunctions.route(
-                POST("/api/chat").and(accept(MediaType.TEXT_EVENT_STREAM)
-        ), proxyHandler::chat);
+                POST("/api/chat")
+                        .and(accept(MediaType.TEXT_EVENT_STREAM))
+                , proxyHandler::chat);
 
     }
 }

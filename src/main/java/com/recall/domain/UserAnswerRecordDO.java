@@ -1,28 +1,29 @@
 package com.recall.domain;
 
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Table;
 
 import java.time.LocalDateTime;
 
-@Table("users")
+@Table("user_answer_record")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
-public class User {
+public class UserAnswerRecordDO {
 
     @Id
     private Long id;
 
-    private String username;
+    private Long sentenceId;
 
-    private Long currentSentenceId;
+    private Long userId;
+
+    private Boolean correct;
 
     private LocalDateTime createTime;
 
-    // getter / setter
 }
 

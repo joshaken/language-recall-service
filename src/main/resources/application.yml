@@ -9,11 +9,11 @@ spring:
   cloud:
     gateway:
       routes:
-#        - id: chat
-#          uri: lb://language-recall-service
-#          uri: forward:/api/chat
-#          predicates:
-#              - Path=/ollama/api/chat/**
+        - id: chat
+          #          uri: lb://language-recall-service
+          uri: forward:/api/chat
+          predicates:
+            - Path=/ollama/api/chat/**
         - id: ollama-proxy
           uri: http://localhost:11434
           predicates:
@@ -24,7 +24,7 @@ spring:
 
 logging:
   level:
-#    org.springframework.cloud.gateway: DEBUG
+    #    org.springframework.cloud.gateway: DEBUG
     org.springframework.web.cors: TRACE
 
 management:

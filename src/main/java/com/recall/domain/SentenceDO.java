@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
-public class Sentence {
+public class SentenceDO {
 
     @Id
     private Long id;
@@ -23,9 +23,7 @@ public class Sentence {
 
     private Integer level;
 
-    // 可选
     private LocalDateTime createTime;
 
-    // getter / setter
 }
 

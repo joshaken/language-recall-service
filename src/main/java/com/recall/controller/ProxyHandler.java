@@ -1,6 +1,7 @@
 package com.recall.controller;
 
 import com.recall.dto.req.ChatRequest;
+import com.recall.dto.req.OllamaMessageDTO;
 import com.recall.dto.resp.ChatResponse;
 import com.recall.service.IChatService;
 import com.recall.utils.JsonUtil;
@@ -16,6 +17,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
+
 //@RestController
 //@RequestMapping("/api")
 @Slf4j
@@ -24,20 +29,23 @@ public class ProxyHandler {
 
     @Resource
     private IChatService iChatService;
+
     //    @PostMapping(value = "/chat",
 //            produces = MediaType.TEXT_EVENT_STREAM_VALUE
 //    )
     public Mono<ServerResponse> chat(ServerRequest request) {
-        return request.bodyToMono(ChatRequest.class)
+        return request.bodyToMono(String.class)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Request body is missing")))
-                .flatMap(chatReq -> {
-                    log.info("Received chat request: {}", JsonUtil.toJson(chatReq));
-
+                .flatMap(x -> {
+                    log.info("Received chat request: {}", JsonUtil.toJson(x));
+                    ChatRequest chatReq = JsonUtil.toObject(x, ChatRequest.class);
                     Flux<ChatResponse> responseStream = iChatService.chat(chatReq);
 
                     return ServerResponse.ok()
-                            .contentType(MediaType.TEXT_EVENT_STREAM)
-                            .body(responseStream, ChatResponse.class);
+                            .contentType(MediaType.APPLICATION_NDJSON)
+//                            .contentType(MediaType.TEXT_EVENT_STREAM)
+                            .body(responseStream
+                                    , ChatResponse.class);
                 })
                 .onErrorResume(ex -> {
                     log.error("Error in chat handler", ex);

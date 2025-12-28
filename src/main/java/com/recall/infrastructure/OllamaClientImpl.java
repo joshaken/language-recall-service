@@ -29,9 +29,10 @@ public class OllamaClientImpl implements OllamaClient {
                     log.info("Ollama content-type = {}", resp.headers().contentType());
 
                     return resp.bodyToFlux(String.class)
-                            .doOnNext(body ->
-                                    log.info("Ollama raw chunk >>> {}", body)
-                            ).mapNotNull(x -> JsonUtil.toObject(x, ChatResponse.class));
+//                            .doOnNext(body ->
+//                                    log.info("Ollama raw chunk >>> {}", body)
+//                            )
+                            .mapNotNull(x -> JsonUtil.toObject(x, ChatResponse.class));
                 })
 //                .retrieve()
 //                .bodyToFlux(EvaluationResult.class)

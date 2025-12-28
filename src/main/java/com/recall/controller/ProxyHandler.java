@@ -1,7 +1,6 @@
 package com.recall.controller;
 
 import com.recall.dto.req.ChatRequest;
-import com.recall.dto.req.OllamaMessageDTO;
 import com.recall.dto.resp.ChatResponse;
 import com.recall.service.IChatService;
 import com.recall.utils.JsonUtil;
@@ -9,17 +8,10 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
 
 //@RestController
 //@RequestMapping("/api")
@@ -53,5 +45,7 @@ public class ProxyHandler {
                             .bodyValue("Error: " + ex.getMessage());
                 });
     }
+
+
 
 }

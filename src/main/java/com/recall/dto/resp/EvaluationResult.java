@@ -20,12 +20,12 @@ public class EvaluationResult {
     /**
      * 评分（0 ~ 100）
      */
-    private Integer score;
+//    private Integer score;
 
     /**
      * 改进建议
      */
-    private List<Object> suggestions;
+//    private List<Object> suggestions;
 
 //    private String modelAnswer;
 }

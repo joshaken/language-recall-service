@@ -20,9 +20,9 @@ public class ChatResponse {
     private String done_reason;
 
     private Long total_duration;
-    private Integer load_duration;
-    private Integer prompt_eval_count;
-    private Integer prompt_eval_duration;
-    private Integer eval_count;
-    private Integer eval_duration;
+    private Long load_duration;
+    private Long prompt_eval_count;
+    private Long prompt_eval_duration;
+    private Long eval_count;
+    private Long eval_duration;
 }

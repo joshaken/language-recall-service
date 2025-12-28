@@ -1,5 +1,9 @@
 package com.recall.utils;
 
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
 public class CustomStringUtil {
     public static boolean containsChinese(String str) {
         if (str == null) return false;
@@ -21,5 +25,15 @@ public class CustomStringUtil {
             if (c >= '\u30A0' && c <= '\u30FF') return true;
         }
         return false;
+    }
+
+    public static List<String> splitByLengthStream(String str, int chunkSize) {
+        if (str == null || str.isEmpty() || chunkSize <= 0) {
+            return List.of();
+        }
+
+        return IntStream.iterate(0, i -> i < str.length(), i -> i + chunkSize)
+                .mapToObj(i -> str.substring(i, Math.min(i + chunkSize, str.length())))
+                .collect(Collectors.toList());
     }
 }

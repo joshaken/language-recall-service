@@ -2,8 +2,6 @@ package com.recall.dto.resp;
 
 import lombok.*;
 
-import java.util.List;
-
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,20 +10,9 @@ import java.util.List;
 @ToString
 public class EvaluationResult {
 
-    /**
-     * 是否翻译正确（语法 + 语义）
-     */
     private Boolean correct;
 
-    /**
-     * 评分（0 ~ 100）
-     */
-//    private Integer score;
+    private String modelAnswer;
 
-    /**
-     * 改进建议
-     */
-//    private List<Object> suggestions;
-
-//    private String modelAnswer;
+    private ChatResponse finalMetadata;
 }

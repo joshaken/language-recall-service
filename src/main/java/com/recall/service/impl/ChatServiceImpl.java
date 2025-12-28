@@ -6,6 +6,7 @@ import com.recall.dto.req.ChatRequest;
 import com.recall.dto.req.OllamaMessageDTO;
 import com.recall.dto.resp.ChatResponse;
 import com.recall.dto.resp.EvaluationResult;
+import com.recall.dto.resp.LlmAccumulator;
 import com.recall.infrastructure.repository.OllamaClient;
 import com.recall.infrastructure.repository.SentenceRepoService;
 import com.recall.infrastructure.repository.UserAnswerRecordRepoService;
@@ -20,6 +21,7 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.ReplayProcessor;
+import reactor.util.function.Tuples;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -71,51 +73,30 @@ public class ChatServiceImpl implements IChatService {
 
                                 // 非中文：走 Ollama 评估流程
                                 ChatRequest llmReq = buildEvaluateRequest(sentence, userInput, chatReq);
-                                Flux<ChatResponse> originalLlmStream = ollamaClient.chat(llmReq);
+                                Flux<ChatResponse> originalLlmStream = ollamaClient.chat(llmReq)
+                                        .publish()
+                                        .refCount();
                                 // 同时解析 EvaluationResult（用于数据库操作）
                                 Mono<EvaluationResult> evalMono = originalLlmStream
-                                        .takeUntil(ChatResponse::isDone)
-                                        .map(chunk -> Optional.ofNullable(chunk.getMessage())
-                                                .map(OllamaMessageDTO::getContent).orElse(""))
-                                        .filter(StringUtils::hasText)
-                                        .reduce(new StringBuilder(), StringBuilder::append)
-                                        .map(StringBuilder::toString)
-                                        .map(fullText -> {
-                                                    // Step 1: 清洗可能的 Markdown 包裹
-                                                    String cleaned = fullText.trim();
-                                                    if (cleaned.startsWith("```json")) {
-                                                        cleaned = cleaned.substring(7); // remove ```json
-                                                    }
-                                                    if (cleaned.startsWith("```")) {
-                                                        cleaned = cleaned.substring(3);
-                                                    }
-                                                    if (cleaned.endsWith("```")) {
-                                                        cleaned = cleaned.substring(0, cleaned.length() - 3);
-                                                    }
-                                                    cleaned = cleaned.trim();
+                                        .reduce(new LlmAccumulator(), (acc, chunk) -> {
+                                            if (chunk.isDone()) {
+                                                acc.setFinalMetadata(chunk);
+                                            } else {
+                                                String text = Optional.ofNullable(chunk.getMessage())
+                                                        .map(OllamaMessageDTO::getContent)
+                                                        .orElse("");
+                                                acc.appendContent(text);
+                                            }
+                                            return acc;
+                                        })
+                                        .map(LlmAccumulator::toEvaluationResult)
+                                        .cache();
 
-                                                    // Step 2: 尝试解析 JSON
-                                                    try {
-                                                        return JsonUtil.toObject(cleaned, EvaluationResult.class);
-                                                    } catch (Exception e) {
-                                                        log.warn("Failed to parse LLM response as JSON, trying regex fallback. Raw: {}", cleaned, e);
-                                                    }
 
-                                                    // Step 3: 正则/关键词提取 fallback
-                                                    boolean correct = cleaned.toLowerCase().contains("\"correct\": \"true\"") ||
-                                                            cleaned.toLowerCase().contains("'correct': 'true'") ||
-                                                            cleaned.toLowerCase().contains("correct: true");
-                                                    return EvaluationResult.builder()
-                                                            .correct(correct)
-                                                            .build();
-                                                }
-                                        )
-                                        .cache(); // cache 避免重复订阅
-
-                                Mono<Void> sideEffects = evalMono
+                                return evalMono
                                         .flatMap(eval -> {
-                                            Mono<UserAnswerRecordDO> saveMono = userAnswerRecordRepoService
-                                                    .saveResult(userId, sentenceId, eval.getCorrect());
+                                            Mono<UserAnswerRecordDO> saveMono =
+                                                    userAnswerRecordRepoService.saveResult(userId, sentenceId, eval.getCorrect());
 
                                             Mono<SentenceDO> nextSentenceMono = sentenceRepoService.getNextSentence(sentenceId);
 
@@ -123,29 +104,30 @@ public class ChatServiceImpl implements IChatService {
                                                     .flatMap(next -> userRepoService.updateCurrentSentence(userId, next.getId()))
                                                     .then();
 
-                                            return Mono.when(saveMono, updateMono).then();
+                                            return Mono.when(saveMono, updateMono)
+                                                    .then(nextSentenceMono.map(next ->
+//                                                            {
+                                                                    // 构造最终回复文本，并设置回 eval（或用局部变量）
+//                                                        String finalReply = eval.getModelAnswer() + "\n\n下一句：" + next.getContent();
+//                                                        eval.setModelAnswer(finalReply); // 假设 EvaluationResult 有这个字段
+//                                                        return eval;
+//                                                    }
+                                                                    Tuples.of(eval, eval.getModelAnswer() + "\n\n下一句：" + next.getContent())
+                                                    ));
                                         })
-                                        .then();
+                                        .flatMapMany(tuple -> {
+                                            EvaluationResult eval = tuple.getT1();
+                                            String finalReply = tuple.getT2();
 
-                                Mono<String> finalAppendContent = sentenceRepoService.getNextSentence(sentenceId)
-                                        .map(SentenceDO::getContent);
-
-                                return originalLlmStream
-                                        .filter(response -> !response.isDone()) // 直接过滤掉 done=true 的 chunk
-                                        .concatWith(
-                                                sideEffects.thenMany(
-                                                        finalAppendContent.flatMapMany(content ->
-                                                                toTokenStream(chatReq.getModel(), content, false)
-                                                        )
-                                                )
-                                        )
-                                        .concatWithValues(createDoneResponse(chatReq.getModel()));
+                                            Flux<ChatResponse> replyStream = toTokenStream(finalReply, chatReq.getModel());
+                                            return replyStream.concatWithValues(eval.getFinalMetadata());
+                                        });
                             });
+
                 })
                 .switchIfEmpty(
-                        sentenceRepoService.initUserFirstSentence(userId).flatMapMany(m -> {
-                            return toTokenStream(m, chatReq.getModel());
-                        })
+                        sentenceRepoService.initUserFirstSentence(userId)
+                                .flatMapMany(m -> toTokenStream("下一句：" + m, chatReq.getModel()))
                 );
     }
 
@@ -167,22 +149,19 @@ public class ChatServiceImpl implements IChatService {
                                                                                 
                                         需要响应：
                                         1. 用户翻译是否正确的json
-                                             {"correct": "ture | false"},
+                                             {"correct": ture | false},
                                         2. 如果不正确，给出不正确的原因
                                         3. 给出正确的回答和对应的解释，包括
                                             3.1 自然口语
                                             3.2 敬语类型的口语
-                                                                            
                                                         """)
                                 .build(),
 
                         OllamaMessageDTO.builder()
                                 .role("user")
                                 .content("""
-                                        【中文原句】
-                                        %s
-                                        【用户翻译】
-                                        %s
+                                        【中文原句】%s
+                                        【用户翻译】%s
                                                         """.formatted(sentence, userInput))
                                 .build()
                 ))

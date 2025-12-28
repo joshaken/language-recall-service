@@ -149,11 +149,11 @@ public class ChatServiceImpl implements IChatService {
                                                                                 
                                         需要响应：
                                         1. 用户翻译是否正确的json
-                                             {"correct": ture | false},
+                                             {"correct": ture | false}
                                         2. 如果不正确，给出不正确的原因
-                                        3. 给出正确的回答和对应的解释，包括
-                                            3.1 自然口语
-                                            3.2 敬语类型的口语
+                                        3. 正确的回答和对应的解释，包括
+                                            1.自然口语
+                                            2.敬语类型的口语
                                                         """)
                                 .build(),
 

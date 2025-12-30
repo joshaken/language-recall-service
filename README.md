@@ -9,14 +9,16 @@
 This project is a **Japanese translation practice and evaluation system**  
 designed for Japanese language learners.
 
-Learners submit their Japanese translations, and the system automatically evaluates them using an LLM (Ollama), focusing on:
+Learners submit their Japanese translations, and the system automatically evaluates them using an LLM (Ollama), focusing
+on:
 
 - Grammar correctness
 - Particle usage
 - Naturalness of expression
 - Overall score
 
-The system records learning progress and provides the next practice sentence, enabling **continuous and structured learning**.
+The system records learning progress and provides the next practice sentence, enabling **continuous and structured
+learning**.
 
 ---
 
@@ -33,22 +35,21 @@ The system records learning progress and provides the next practice sentence, en
 
 ## System Architecture
 
-Client [(ollama-webui-lite)](https://github.com/joshaken/ollama-webui-lite)
-⬇️
-Spring Gateway
-⬇️
-Spring WebFlux API
-⬇️
-[Ollama](https://github.com/ollama/ollama) (LLM)
-⬇️
-H2 Database
+```mermaid
+flowchart TD
+    Client["Client<br/><a href='https://github.com/joshaken/ollama-webui-lite'>ollama-webui-lite</a>"] --> Gateway["Spring Cloud Gateway"]
+    Gateway --> API["Spring WebFlux API"]
+    API --> Ollama["LLM<br/><a href='https://github.com/ollama/ollama'>Ollama</a>"]
+    Ollama --> DB["H2 Database"]
+ ```
 
 ---
 
 ## Tech Stack
 
 ### Backend
-- Java 17
+
+- Java 17 +
 - Spring Boot
 - Spring WebFlux
 - Spring Gateway
@@ -56,10 +57,12 @@ H2 Database
 - Project Reactor
 
 ### LLM
+
 - Ollama
 - Supports both streaming and non-streaming responses
 
 ### Database
+
 - H2 Database / postgres
 
 ---

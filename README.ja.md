@@ -35,22 +35,21 @@ LLM（Ollama）を用いて以下を自動で評価します。
 
 ## システム構成
 
-Client [(ollama-webui-lite)](https://github.com/joshaken/ollama-webui-lite)
-⬇️
-Spring Gateway
-⬇️
-Spring WebFlux API
-⬇️
-[Ollama](https://github.com/ollama/ollama) (LLM)
-⬇️
-H2 Database
+```mermaid
+flowchart TD
+    Client["Client<br/><a href='https://github.com/joshaken/ollama-webui-lite'>ollama-webui-lite</a>"] --> Gateway["Spring Cloud Gateway"]
+    Gateway --> API["Spring WebFlux API"]
+    API --> Ollama["LLM<br/><a href='https://github.com/ollama/ollama'>Ollama</a>"]
+    Ollama --> DB["H2 Database"]
+ ```
 
 ---
 
 ## 使用技術
 
 ### バックエンド
-- Java 17
+
+- Java 17 +
 - Spring Boot
 - Spring WebFlux
 - Spring Gateway
@@ -58,10 +57,12 @@ H2 Database
 - Project Reactor
 
 ### LLM
+
 - Ollama
 - Streaming / Non-Streaming 両対応
 
 ### データベース
+
 - H2 Database / postgres
 
 ---
@@ -116,7 +117,7 @@ H2 Database
 - ユーザー管理機能の拡張
 - 難易度別の文管理
 - 評価基準のカスタマイズ
-- 
+-
 
 ---
 

@@ -107,7 +107,6 @@ These tables manage user progress and answer history.
 
 ## Purpose of This Project
 
-- Self-directed learning outside of work
 - Practical experience with the reactive stack
 - Backend design with LLM integration
 - Building a real-world language learning support system

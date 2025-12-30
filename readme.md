@@ -1,14 +1,17 @@
-# Project Stucture
+# Project Structure
 
 ![UML.png](UML.png)
 
 # Usage
 
-1. frontend
-
-2. Ollama
+1. [Frontend Interface](https://github.com/joshaken/ollama-webui-lite)
+2. [Ollama](https://github.com/ollama/ollama)
 
 # Components
 
-Spring webflux 
-Spring gateway
+| Component      |
+|----------------|
+| Spring Webflux |
+| Spring Gateway |
+| Spring Boot    |
+| H2             |

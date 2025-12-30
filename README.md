@@ -119,7 +119,6 @@ These tables manage user progress and answer history.
 - Enhanced user management
 - Difficulty-based sentence categorization
 - Customizable evaluation rules
-- Independent frontend implementation
 
 ---
 

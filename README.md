@@ -49,7 +49,7 @@ flowchart TD
 
 ### Backend
 
-- Java 17 +
+- Java 21
 - Spring Boot
 - Spring WebFlux
 - Spring Gateway

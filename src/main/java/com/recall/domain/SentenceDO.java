@@ -25,5 +25,9 @@ public class SentenceDO {
 
     private LocalDateTime createTime;
 
+    public SentenceDO(Long id, String content) {
+        this.id = id;
+        this.content = content;
+    }
 }
 

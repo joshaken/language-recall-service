@@ -68,7 +68,7 @@ public class ChatServiceImpl implements IChatService {
                                 if (!CustomStringUtil.containsJapanese(userInput)) {
                                     // 中文：直接返回“下一句：xxx” 的 token 流
                                     String content = "下一句：" + sentence;
-                                    return toTokenStream(content, chatReq.getModel());
+                                    return toTokenStream(content, chatReq.getModel(), Boolean.TRUE);
                                 }
 
                                 // 非中文：走 Ollama 评估流程
@@ -119,7 +119,7 @@ public class ChatServiceImpl implements IChatService {
                                             EvaluationResult eval = tuple.getT1();
                                             String finalReply = tuple.getT2();
 
-                                            Flux<ChatResponse> replyStream = toTokenStream(finalReply, chatReq.getModel());
+                                            Flux<ChatResponse> replyStream = toTokenStream(finalReply, chatReq.getModel(), Boolean.FALSE);
                                             return replyStream.concatWithValues(eval.getFinalMetadata());
                                         });
                             });
@@ -127,7 +127,7 @@ public class ChatServiceImpl implements IChatService {
                 })
                 .switchIfEmpty(
                         sentenceRepoService.initUserFirstSentence(userId)
-                                .flatMapMany(m -> toTokenStream("下一句：" + m, chatReq.getModel()))
+                                .flatMapMany(m -> toTokenStream("下一句：" + m, chatReq.getModel(), Boolean.TRUE))
                 );
     }
 
@@ -169,7 +169,7 @@ public class ChatServiceImpl implements IChatService {
                 .build();
     }
 
-    private Flux<ChatResponse> toTokenStream(String fullContent, String model) {
+    private Flux<ChatResponse> toTokenStream(String fullContent, String model, boolean done) {
         List<String> tokens = CustomStringUtil.splitByLengthStream(fullContent, 5);
 
         Flux<ChatResponse> tokenFlux = Flux.fromIterable(tokens)
@@ -182,6 +182,10 @@ public class ChatServiceImpl implements IChatService {
                         .build()
                 );
 
+        if (!done) {
+            return tokenFlux;
+        }
+
         ChatResponse doneFrame = ChatResponse.builder()
                 .message(OllamaMessageDTO.builder().content("").build())
                 .model(model)
@@ -192,49 +196,6 @@ public class ChatServiceImpl implements IChatService {
                 .build();
 
         return tokenFlux.concatWithValues(doneFrame);
-    }
-
-    // 生成 token 流，但每个 chunk 的 done = false（由外部控制结束）
-    private Flux<ChatResponse> toTokenStream(String model, String content, boolean includeDone) {
-        if (content == null || content.isEmpty()) {
-            if (includeDone) {
-                return Flux.just(createDoneResponse(model));
-            } else {
-                return Flux.empty();
-            }
-        }
-
-        List<String> tokens = CustomStringUtil.splitByLengthStream(content, 5);
-
-        Flux<ChatResponse> stream = Flux.fromIterable(tokens)
-                .map(token -> ChatResponse.builder()
-                        .model(model)
-                        .message(OllamaMessageDTO.builder()
-                                .role("assistant")
-                                .content(token)
-                                .build())
-                        .created_at(Instant.now())
-                        .done(false) // ← 关键：不是 done
-                        .build());
-
-        if (includeDone) {
-            return stream.concatWithValues(createDoneResponse(model));
-        } else {
-            return stream;
-        }
-    }
-
-    private ChatResponse createDoneResponse(String model) {
-        return ChatResponse.builder()
-                .model(model)
-                .message(OllamaMessageDTO.builder()
-                        .role("assistant")
-                        .content("")
-                        .build())
-                .created_at(Instant.now())
-                .done(true)
-                .done_reason("stop")
-                .build();
     }
 
 }

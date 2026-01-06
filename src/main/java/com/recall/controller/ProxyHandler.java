@@ -1,7 +1,7 @@
 package com.recall.controller;
 
 import com.recall.dto.req.ChatRequest;
-import com.recall.dto.resp.ChatResponse;
+import com.recall.dto.resp.OllamaChatResponse;
 import com.recall.service.IChatService;
 import com.recall.utils.JsonUtil;
 import jakarta.annotation.Resource;
@@ -31,13 +31,13 @@ public class ProxyHandler {
                 .flatMap(x -> {
                     log.info("Received chat request: {}", JsonUtil.toJson(x));
                     ChatRequest chatReq = JsonUtil.toObject(x, ChatRequest.class);
-                    Flux<ChatResponse> responseStream = iChatService.chat(chatReq);
+                    Flux<OllamaChatResponse> responseStream = iChatService.chat(chatReq);
 
                     return ServerResponse.ok()
                             .contentType(MediaType.APPLICATION_NDJSON)
 //                            .contentType(MediaType.TEXT_EVENT_STREAM)
                             .body(responseStream
-                                    , ChatResponse.class);
+                                    , OllamaChatResponse.class);
                 })
                 .onErrorResume(ex -> {
                     log.error("Error in chat handler", ex);

@@ -122,4 +122,4 @@ flowchart TD
 
 ## ライセンス
 
-This project is for learning and demonstration purposes.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

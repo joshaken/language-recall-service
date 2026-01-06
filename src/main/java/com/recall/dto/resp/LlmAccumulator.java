@@ -7,7 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class LlmAccumulator {
     private final StringBuilder content = new StringBuilder();
-    private ChatResponse finalMetadata = null;
+    private OllamaChatResponse finalMetadata = null;
 
     public void appendContent(String text) {
         if (text != null) content.append(text);

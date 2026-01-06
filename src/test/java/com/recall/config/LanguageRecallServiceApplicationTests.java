@@ -4,13 +4,16 @@ import com.recall.domain.SentenceDO;
 import com.recall.domain.UserAnswerRecordDO;
 import com.recall.dto.req.ChatRequest;
 import com.recall.dto.req.OllamaMessageDTO;
-import com.recall.dto.resp.ChatResponse;
+import com.recall.dto.resp.OllamaChatResponse;
 import com.recall.infrastructure.repository.OllamaClient;
 import com.recall.infrastructure.repository.SentenceRepoService;
 import com.recall.infrastructure.repository.UserAnswerRecordRepoService;
 import com.recall.infrastructure.repository.UserRepoService;
 import com.recall.service.IChatService;
+import com.recall.utils.OllamaChatUtil;
+import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -59,7 +63,7 @@ class LanguageRecallServiceApplicationTests {
         req.setMessages(List.of(OllamaMessageDTO.builder().role("user").content("hello").build()));
 
         // When
-        Flux<ChatResponse> result = chatService.chat(req);
+        Flux<OllamaChatResponse> result = chatService.chat(req);
 
         // Then
         StepVerifier.create(result)
@@ -76,15 +80,15 @@ class LanguageRecallServiceApplicationTests {
     @Test
     void shouldEvaluateJapaneseInputAndSaveResult() {
         // Mock LLM response stream
-        Flux<ChatResponse> mockLlmStream = Flux.just(
-                createChunk("{"),
-                createChunk("\"correct\": false"),
-                createChunk("}"),
-                createChunk("haha，u are actually right"),
-                createDoneChunk()
+        Flux<OllamaChatResponse> mockLlmStream = Flux.just(
+                OllamaChatUtil.createChunk("{"),
+                OllamaChatUtil.createChunk("\"correct\": false"),
+                OllamaChatUtil.createChunk("}"),
+                OllamaChatUtil.createChunk("haha，u are actually right"),
+                OllamaChatUtil.createDoneChunk()
         );
 
-        when(ollamaClient.chat(any())).thenReturn(mockLlmStream);
+        when(ollamaClient.chat(any(), any(), any())).thenReturn(mockLlmStream);
         when(userRepoService.findUserCurrentSentence(1L)).thenReturn(Mono.just(1L));
         when(sentenceRepoService.loadSentence(1L)).thenReturn(Mono.just("你好"));
         when(sentenceRepoService.getNextSentence(1L)).thenReturn(Mono.just(new SentenceDO(2L, "再见")));
@@ -96,7 +100,7 @@ class LanguageRecallServiceApplicationTests {
         req.setModel("llama3");
         req.setMessages(List.of(OllamaMessageDTO.builder().role("user").content("こんにちは").build())); // 日语
 
-        Flux<ChatResponse> result = chatService.chat(req);
+        Flux<OllamaChatResponse> result = chatService.chat(req);
 
         StepVerifier.create(result)
                 .recordWith(ArrayList::new)
@@ -136,19 +140,22 @@ class LanguageRecallServiceApplicationTests {
                 .value(errorMessage -> assertThat(errorMessage).contains("Error"));
     }
 
-    private ChatResponse createChunk(String content) {
-        return ChatResponse.builder()
-                .message(OllamaMessageDTO.builder().content(content).build())
-                .done(false)
-                .build();
+    @Test
+    void springAIResponse() {
+
+        // given
+//        ChatRequest req = new ChatRequest();
+//        req.setModel("qwen3-vl:4b");
+//
+//        // when
+//        Flux<OllamaChatResponse> result =
+//                ollamaClient.chat2("你好", "こんにちは", req);
+////
+////        // then
+//        StepVerifier.create(result)
+//
+//                .verifyComplete();
     }
 
-    private ChatResponse createDoneChunk() {
-        return ChatResponse.builder()
-                .message(OllamaMessageDTO.builder().content("").build())
-                .done(true)
-                .done_reason("stop")
-                .build();
-    }
 
 }

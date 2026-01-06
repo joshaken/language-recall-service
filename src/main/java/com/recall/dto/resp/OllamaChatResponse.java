@@ -4,7 +4,6 @@ import com.recall.dto.req.OllamaMessageDTO;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @ToString
 @Builder
-public class ChatResponse {
+public class OllamaChatResponse {
     private String model;
     private Instant created_at;
     private OllamaMessageDTO message;

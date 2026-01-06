@@ -4,7 +4,7 @@ import com.recall.domain.SentenceDO;
 import com.recall.domain.UserAnswerRecordDO;
 import com.recall.dto.req.ChatRequest;
 import com.recall.dto.req.OllamaMessageDTO;
-import com.recall.dto.resp.ChatResponse;
+import com.recall.dto.resp.OllamaChatResponse;
 import com.recall.dto.resp.EvaluationResult;
 import com.recall.dto.resp.LlmAccumulator;
 import com.recall.infrastructure.repository.OllamaClient;
@@ -13,24 +13,17 @@ import com.recall.infrastructure.repository.UserAnswerRecordRepoService;
 import com.recall.infrastructure.repository.UserRepoService;
 import com.recall.service.IChatService;
 import com.recall.utils.CustomStringUtil;
-import com.recall.utils.JsonUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.ReplayProcessor;
 import reactor.util.function.Tuples;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -50,7 +43,7 @@ public class ChatServiceImpl implements IChatService {
     private OllamaClient ollamaClient;
 
     @Override
-    public Flux<ChatResponse> chat(ChatRequest chatReq) {
+    public Flux<OllamaChatResponse> chat(ChatRequest chatReq) {
         OllamaMessageDTO lastMessage = chatReq.getMessages()
                 .stream()
                 .filter(x -> "user".equals(x.getRole()))
@@ -72,8 +65,8 @@ public class ChatServiceImpl implements IChatService {
                                 }
 
                                 // 非中文：走 Ollama 评估流程
-                                ChatRequest llmReq = buildEvaluateRequest(sentence, userInput, chatReq);
-                                Flux<ChatResponse> originalLlmStream = ollamaClient.chat(llmReq)
+//                                ChatRequest llmReq = buildEvaluateRequest();
+                                Flux<OllamaChatResponse> originalLlmStream = ollamaClient.chat(sentence, userInput, chatReq)
                                         .publish()
                                         .refCount();
                                 // 同时解析 EvaluationResult（用于数据库操作）
@@ -119,7 +112,7 @@ public class ChatServiceImpl implements IChatService {
                                             EvaluationResult eval = tuple.getT1();
                                             String finalReply = tuple.getT2();
 
-                                            Flux<ChatResponse> replyStream = toTokenStream(finalReply, chatReq.getModel(), Boolean.FALSE);
+                                            Flux<OllamaChatResponse> replyStream = toTokenStream(finalReply, chatReq.getModel(), Boolean.FALSE);
                                             return replyStream.concatWithValues(eval.getFinalMetadata());
                                         });
                             });
@@ -132,49 +125,12 @@ public class ChatServiceImpl implements IChatService {
     }
 
 
-    private ChatRequest buildEvaluateRequest(String sentence, String userInput, ChatRequest chatReq) {
-        return ChatRequest.builder()
-                .model(chatReq.getModel())
-                .messages(List.of(
-                        OllamaMessageDTO.builder()
-                                .role("system")
-                                .content("""
-                                        你是一个日语母语者。
-                                        你的任务是评估外国人对给定中文句子的日语翻译。
-
-                                        请从以下方面进行评价：
-                                        1. 语法是否正确
-                                        2. 助词使用是否恰当
-                                        3. 表达是否自然、符合语境
-                                                                                
-                                        需要响应：
-                                        1. 用户翻译是否正确的json
-                                             {"correct": ture | false}
-                                        2. 如果不正确，给出不正确的原因
-                                        3. 正确的回答和对应的解释，包括
-                                            1.自然口语
-                                            2.敬语类型的口语
-                                                        """)
-                                .build(),
-
-                        OllamaMessageDTO.builder()
-                                .role("user")
-                                .content("""
-                                        【中文原句】%s
-                                        【用户翻译】%s
-                                                        """.formatted(sentence, userInput))
-                                .build()
-                ))
-                .stream(true)
-                .build();
-    }
-
-    private Flux<ChatResponse> toTokenStream(String fullContent, String model, boolean done) {
+    private Flux<OllamaChatResponse> toTokenStream(String fullContent, String model, boolean done) {
         List<String> tokens = CustomStringUtil.splitByLengthStream(fullContent, 5);
 
-        Flux<ChatResponse> tokenFlux = Flux.fromIterable(tokens)
+        Flux<OllamaChatResponse> tokenFlux = Flux.fromIterable(tokens)
                 .delayElements(Duration.ofMillis(1))
-                .map(token -> ChatResponse.builder()
+                .map(token -> OllamaChatResponse.builder()
                         .message(OllamaMessageDTO.builder().content(token).build())
                         .model(model)
                         .created_at(Instant.now())
@@ -186,7 +142,7 @@ public class ChatServiceImpl implements IChatService {
             return tokenFlux;
         }
 
-        ChatResponse doneFrame = ChatResponse.builder()
+        OllamaChatResponse doneFrame = OllamaChatResponse.builder()
                 .message(OllamaMessageDTO.builder().content("").build())
                 .model(model)
                 .created_at(Instant.now())

@@ -14,5 +14,5 @@ public class EvaluationResult {
 
     private String modelAnswer;
 
-    private ChatResponse finalMetadata;
+    private OllamaChatResponse finalMetadata;
 }

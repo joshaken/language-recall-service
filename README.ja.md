@@ -58,7 +58,6 @@ flowchart TD
 ### LLM
 
 - Ollama
-- Streaming / Non-Streaming 両対応
 
 ### データベース
 

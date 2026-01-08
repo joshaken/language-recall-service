@@ -58,7 +58,6 @@ flowchart TD
 ### LLM
 
 - Ollama
-- Supports both streaming and non-streaming responses
 
 ### Database
 

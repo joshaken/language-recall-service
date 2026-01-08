@@ -27,7 +27,6 @@ learning**.
 - Automatic evaluation of Japanese translations (LLM-based)
 - Correct / Incorrect judgment
 - Learning history persistence
-- User progress tracking (current sentence)
 - Automatic next-sentence recommendation
 - Ollama API–compatible responses (supports ollama-webui-lite)
 
@@ -116,6 +115,7 @@ These tables manage user progress and answer history.
 ## Future Improvements
 
 - Enhanced user management
+- User progress tracking (current sentence)
 - Difficulty-based sentence categorization
 - Customizable evaluation rules
 

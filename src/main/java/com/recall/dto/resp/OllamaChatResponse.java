@@ -13,15 +13,15 @@ import java.time.Instant;
 @Builder
 public class OllamaChatResponse {
     private String model;
-    private Instant created_at;
+    private Instant createdAt;
     private OllamaMessageDTO message;
     private boolean done;
-    private String done_reason;
+    private String doneReason;
 
-    private Long total_duration;
-    private Long load_duration;
-    private Long prompt_eval_count;
-    private Long prompt_eval_duration;
-    private Long eval_count;
-    private Long eval_duration;
+    private Long totalDuration;
+    private Long loadDuration;
+    private Integer promptEvalCount;
+    private Long promptEvalDuration;
+    private Integer evalCount;
+    private Long evalDuration;
 }

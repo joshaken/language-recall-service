@@ -5,15 +5,13 @@ import com.recall.domain.UserAnswerRecordDO;
 import com.recall.dto.req.ChatRequest;
 import com.recall.dto.req.OllamaMessageDTO;
 import com.recall.dto.resp.OllamaChatResponse;
-import com.recall.infrastructure.repository.OllamaClient;
+import com.recall.infrastructure.ai.OllamaClient;
 import com.recall.infrastructure.repository.SentenceRepoService;
 import com.recall.infrastructure.repository.UserAnswerRecordRepoService;
 import com.recall.infrastructure.repository.UserRepoService;
 import com.recall.service.IChatService;
 import com.recall.utils.OllamaChatUtil;
-import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,7 +27,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
@@ -71,7 +68,7 @@ class LanguageRecallServiceApplicationTests {
                 .expectNextCount(1) // 没有中间段
                 .assertNext(r -> {
                     assertThat(r.isDone()).isTrue();
-                    assertThat(r.getDone_reason()).isEqualTo("stop");
+                    assertThat(r.getDoneReason()).isEqualTo("stop");
                 })
                 .expectComplete()
                 .verify();

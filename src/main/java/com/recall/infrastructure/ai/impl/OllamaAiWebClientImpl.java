@@ -1,83 +1,26 @@
-package com.recall.infrastructure;
+package com.recall.infrastructure.ai.impl;
 
 import com.recall.dto.req.ChatRequest;
 import com.recall.dto.req.OllamaMessageDTO;
 import com.recall.dto.resp.OllamaChatResponse;
-import com.recall.infrastructure.repository.OllamaClient;
+import com.recall.infrastructure.ai.IAiService;
 import com.recall.utils.JsonUtil;
-import com.recall.utils.OllamaChatUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.messages.SystemMessage;
-import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.model.ChatModel;
-import org.springframework.ai.chat.prompt.ChatOptions;
-import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.converter.BeanOutputConverter;
-import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
 
+@ConditionalOnProperty(value = "config.ai.method", havingValue = "http")
 @Service
 @Slf4j
-public class OllamaClientImpl implements OllamaClient {
+public class OllamaAiWebClientImpl implements IAiService {
 
     @Resource
     private WebClient webClient;
-
-    @Resource
-    private OllamaChatModel chatModel;
-
-
-    private final BeanOutputConverter<OllamaChatResponse> outputConverter = new BeanOutputConverter<>(OllamaChatResponse.class);
-
-    @Override
-    public Flux<OllamaChatResponse> chat2(String sentence, String userInput, ChatRequest chatReq) {
-
-        Prompt prompt = new Prompt(
-                List.of(
-                        new SystemMessage(getSystemContent())
-                        ,
-                        new UserMessage(getUserContent(sentence, userInput))
-                )
-                ,
-                ChatOptions.builder()
-                        .model(chatReq.getModel())
-                        .build()
-        );
-
-//        return ChatClient.builder(chatModel).build()
-//                .prompt()
-//                .options(                ChatOptions.builder()
-//                        .model(chatReq.getModel())
-//                        .build()
-//                )
-//                .system(getSystemContent())
-//                .user(getUserContent(sentence, userInput))
-//                .stream()
-//                .content()
-//                .filter(m -> !m.isEmpty())
-//                .mapNotNull(m -> JsonUtil.toObject(m, OllamaChatResponse.class));
-
-
-        return chatModel.stream(prompt)
-                .map(m -> {
-                    String content = m.getResult().getOutput().getText();
-
-
-                    OllamaChatResponse response = new OllamaChatResponse();
-
-
-                    return response;
-
-                })
-                .concatWithValues(OllamaChatUtil.createDoneChunk());
-
-    }
 
     @Override
     public Flux<OllamaChatResponse> chat(String sentence, String userInput, ChatRequest chatReq) {

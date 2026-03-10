@@ -16,7 +16,7 @@ public class OllamaChatUtil {
         return OllamaChatResponse.builder()
                 .message(OllamaMessageDTO.builder().content("").build())
                 .done(true)
-                .done_reason("stop")
+                .doneReason("stop")
                 .build();
     }
 }

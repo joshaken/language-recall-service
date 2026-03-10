@@ -7,7 +7,7 @@ import com.recall.dto.req.OllamaMessageDTO;
 import com.recall.dto.resp.OllamaChatResponse;
 import com.recall.dto.resp.EvaluationResult;
 import com.recall.dto.resp.LlmAccumulator;
-import com.recall.infrastructure.repository.OllamaClient;
+import com.recall.infrastructure.ai.OllamaClient;
 import com.recall.infrastructure.repository.SentenceRepoService;
 import com.recall.infrastructure.repository.UserAnswerRecordRepoService;
 import com.recall.infrastructure.repository.UserRepoService;
@@ -133,7 +133,7 @@ public class ChatServiceImpl implements IChatService {
                 .map(token -> OllamaChatResponse.builder()
                         .message(OllamaMessageDTO.builder().content(token).build())
                         .model(model)
-                        .created_at(Instant.now())
+                        .createdAt(Instant.now())
                         .done(false)
                         .build()
                 );
@@ -145,10 +145,10 @@ public class ChatServiceImpl implements IChatService {
         OllamaChatResponse doneFrame = OllamaChatResponse.builder()
                 .message(OllamaMessageDTO.builder().content("").build())
                 .model(model)
-                .created_at(Instant.now())
+                .createdAt(Instant.now())
                 .done(true)
-                .done_reason("stop")
-                .eval_count((long) tokens.size())
+                .doneReason("stop")
+                .evalCount(tokens.size())
                 .build();
 
         return tokenFlux.concatWithValues(doneFrame);

@@ -21,7 +21,20 @@ spring:
           filters:
             - StripPrefix=1
             - DedupeResponseHeader=Access-Control-Allow-Origin Vary
-
+  ai:
+    ollama:
+      base-url: http://localhost:11434
+      #      api-key:
+      chat:
+        options:
+          model: ${AI_MODEL:qwen3-vl:235b-cloud}
+          temperature: 0.7
+      embedding:
+        options:
+          model: text-embedding-v3
+    retry:
+      max-attempts: 1
+      on-client-errors: false
 logging:
   level:
     #    org.springframework.cloud.gateway: DEBUG

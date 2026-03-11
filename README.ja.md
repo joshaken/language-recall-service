@@ -52,6 +52,7 @@ flowchart TD
 - Spring Boot
 - Spring WebFlux
 - Spring Gateway
+- Spring AI
 - R2DBC
 - Project Reactor
 

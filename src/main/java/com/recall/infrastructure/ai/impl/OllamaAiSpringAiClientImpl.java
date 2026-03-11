@@ -18,6 +18,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Implementation of OllamaClient using Spring AI.
+ * Activated when config.ai.method is set to "spring" or missing.
+ */
 @ConditionalOnProperty(value = "config.ai.method", havingValue = "spring", matchIfMissing = true)
 @Service
 @Slf4j
@@ -32,6 +36,9 @@ public class OllamaAiSpringAiClientImpl implements OllamaClient {
     @Resource
     private OllamaApi ollamaApi;
 
+    /**
+     * Constructs the client with prompt templates loaded from resources.
+     */
     public OllamaAiSpringAiClientImpl(
             @Value("classpath:prompts/input-evaluation-user.st") org.springframework.core.io.Resource userPromptResource
             , @Value("classpath:prompts/input-evaluation-sys.st") org.springframework.core.io.Resource sysPromptResource
@@ -40,6 +47,13 @@ public class OllamaAiSpringAiClientImpl implements OllamaClient {
         this.userPrompt = new PromptTemplate(userPromptResource.getContentAsString(StandardCharsets.UTF_8));
     }
 
+    /**
+     * Performs a chat operation with the Ollama model using Spring AI.
+     * @param sentence The current sentence context
+     * @param userInput The user's input
+     * @param chatReq The chat request parameters (not used in this implementation)
+     * @return A stream of chat responses
+     */
     @Override
     public Flux<OllamaChatResponse> chat(String sentence, String userInput, ChatRequest chatReq) {
         String renderedUserPrompt = userPrompt.render(Map.of(

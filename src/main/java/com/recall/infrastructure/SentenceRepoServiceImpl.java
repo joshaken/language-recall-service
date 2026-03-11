@@ -8,6 +8,9 @@ import org.springframework.data.r2dbc.core.R2dbcEntityTemplate;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+/**
+ * Implementation of SentenceRepoService for database operations.
+ */
 @Service
 public class SentenceRepoServiceImpl implements SentenceRepoService {
 
@@ -17,6 +20,11 @@ public class SentenceRepoServiceImpl implements SentenceRepoService {
     @Resource
     private SentenceRepository sentenceRepository;
 
+    /**
+     * Loads the content of a sentence by its ID.
+     * @param sentenceId The ID of the sentence
+     * @return A Mono emitting the sentence content
+     */
     @Override
     public Mono<String> loadSentence(Long sentenceId) {
         return template.getDatabaseClient()
@@ -30,6 +38,11 @@ public class SentenceRepoServiceImpl implements SentenceRepoService {
                 .one();
     }
 
+    /**
+     * Initializes the first sentence for a user.
+     * @param userId The ID of the user
+     * @return A Mono emitting the content of the first sentence
+     */
     @Override
     public Mono<String> initUserFirstSentence(Long userId) {
         return template.getDatabaseClient()
@@ -59,6 +72,11 @@ public class SentenceRepoServiceImpl implements SentenceRepoService {
                 );
     }
 
+    /**
+     * Gets the next sentence after the given sentence ID.
+     * @param sentenceId The current sentence ID
+     * @return A Mono emitting the next sentence DO
+     */
     @Override
     public Mono<SentenceDO> getNextSentence(Long sentenceId) {
         return sentenceRepository.findNextSentence(sentenceId);

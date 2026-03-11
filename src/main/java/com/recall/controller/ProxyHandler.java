@@ -13,6 +13,10 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Handler for proxying chat requests to the Ollama service.
+ * Note: This class is currently not annotated as a REST controller.
+ */
 //@RestController
 //@RequestMapping("/api")
 @Slf4j
@@ -22,9 +26,14 @@ public class ProxyHandler {
     @Resource
     private IChatService iChatService;
 
+    /**
+     * Handles chat requests.
+     * @param request The server request containing the chat payload
+     * @return A server response with the chat stream
+     */
     //    @PostMapping(value = "/chat",
-//            produces = MediaType.TEXT_EVENT_STREAM_VALUE
-//    )
+    //            produces = MediaType.TEXT_EVENT_STREAM_VALUE
+    //    )
     public Mono<ServerResponse> chat(ServerRequest request) {
         return request.bodyToMono(String.class)
                 .switchIfEmpty(Mono.error(new IllegalArgumentException("Request body is missing")))

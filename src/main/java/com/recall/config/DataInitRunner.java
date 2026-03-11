@@ -10,6 +10,9 @@ import org.springframework.r2dbc.connection.init.ResourceDatabasePopulator;
 import org.springframework.stereotype.Component;
 import org.springframework.r2dbc.core.DatabaseClient;
 
+/**
+ * Application runner to initialize database data on startup.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -18,6 +21,11 @@ public class DataInitRunner implements ApplicationRunner {
     private final DatabaseClient databaseClient;
     private final ConnectionFactory connectionFactory;
 
+    /**
+     * Runs the data initialization process.
+     * Checks if the sentences table is empty and populates it from a SQL script.
+     * @param args Application arguments
+     */
     @Override
     public void run(ApplicationArguments args) {
 

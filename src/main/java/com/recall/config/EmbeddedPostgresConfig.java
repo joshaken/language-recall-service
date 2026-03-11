@@ -13,26 +13,32 @@
 //import java.io.IOException;
 //import java.util.concurrent.atomic.AtomicReference;
 //
+///**
+// * Configuration for embedded PostgreSQL database.
+// * This is currently commented out and not active.
+// */
 //@Configuration
 //@Conditional(OnMissingR2dbcUrlCondition.class)
 //public class EmbeddedPostgresConfig {
 //
 //
 //    /**
-//     * 启动内嵌 PostgreSQL（只启动一次）
+//     * Starts an embedded PostgreSQL instance (starts only once).
+//     * @return The embedded PostgreSQL instance
 //     */
 //    private EmbeddedPostgres startEmbeddedPostgres() {
 //        return EmbeddedPostgres.start();
 //    }
 //
 //    /**
-//     * 提供 R2DBC ConnectionFactory
+//     * Provides an R2DBC ConnectionFactory for the embedded database.
+//     * @return The R2DBC ConnectionFactory
 //     */
 //    @Bean
 //    public ConnectionFactory connectionFactory() {
 //        EmbeddedPostgres pg = startEmbeddedPostgres();
 //        DataSource dataSource = pg.getPostgresDatabase(); // JDBC DataSource
-//        // Spring Boot 自动桥接 DataSource → R2DBC (via r2dbc-pool + proxy)
+//        // Spring Boot automatically bridges DataSource → R2DBC (via r2dbc-pool + proxy)
 //        String jdbcUrl = pg.getJdbcUrl("postgres");
 //        String r2dbcUrl = jdbcUrl.replaceFirst("^jdbc:", "r2dbc:");
 //        return ConnectionFactoryBuilder.withUrl(r2dbcUrl)
@@ -40,7 +46,8 @@
 //    }
 //
 //    /**
-//     * （可选）如果你也用 JDBC（比如 Flyway），可以提供 DataSource
+//     * (Optional) Provides a DataSource if JDBC is also used (e.g., for Flyway).
+//     * @return The JDBC DataSource
 //     */
 //    @Bean
 //    public DataSource dataSource() {

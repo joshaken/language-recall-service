@@ -3,17 +3,19 @@ package com.recall.enums;
 import java.io.Serializable;
 
 /**
- * 结果信息
+ * Interface for result messages (e.g., error codes and messages).
  **/
 public interface IResultMsg extends Serializable {
 
     /**
-     * @return 获取错误代码
+     * Gets the error code.
+     * @return The error code
      */
     Integer getCode();
 
     /**
-     * 获取错误消息
+     * Gets the error message.
+     * @return The error message
      */
     String getMessage();
 

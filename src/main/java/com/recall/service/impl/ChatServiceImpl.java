@@ -4,9 +4,8 @@ import com.recall.domain.SentenceDO;
 import com.recall.domain.UserAnswerRecordDO;
 import com.recall.dto.req.ChatRequest;
 import com.recall.dto.req.OllamaMessageDTO;
-import com.recall.dto.resp.OllamaChatResponse;
-import com.recall.dto.resp.EvaluationResult;
 import com.recall.dto.resp.LlmAccumulator;
+import com.recall.dto.resp.OllamaChatResponse;
 import com.recall.infrastructure.ai.OllamaClient;
 import com.recall.infrastructure.repository.SentenceRepoService;
 import com.recall.infrastructure.repository.UserAnswerRecordRepoService;
@@ -28,7 +27,13 @@ import java.util.Optional;
 @Service
 @Slf4j
 public class ChatServiceImpl implements IChatService {
-//    private static final String OLLAMA_BASE_URL = "http://localhost:11434/api";
+    //    private static final String OLLAMA_BASE_URL = "http://localhost:11434/api";
+
+    // Default user ID for single-user mode or when user context is not available
+    private static final Long DEFAULT_USER_ID = 1L;
+
+    // Chunk size for splitting text into tokens in the simulated stream
+    private static final int TOKEN_CHUNK_SIZE = 5;
 
     @Resource
     private UserRepoService userRepoService;
@@ -44,91 +49,124 @@ public class ChatServiceImpl implements IChatService {
 
     @Override
     public Flux<OllamaChatResponse> chat(ChatRequest chatReq) {
+        // Extract the last user message from the request
         OllamaMessageDTO lastMessage = chatReq.getMessages()
                 .stream()
                 .filter(x -> "user".equals(x.getRole()))
-                .reduce((a, b) -> b) // 取最后一条
-                .orElseThrow(() -> new IllegalArgumentException("No user message"));
+                .reduce((a, b) -> b) // Get the last user message
+                .orElseThrow(() -> new IllegalArgumentException("No user message found"));
 
         String userInput = lastMessage.getContent();
-        Long userId = 1L;
+        Long userId = DEFAULT_USER_ID; // TODO: Replace with dynamic user ID extraction (e.g., from JWT or session)
 
         return userRepoService.findUserCurrentSentence(userId)
                 .flatMapMany(sentenceId -> {
-                    log.info("user sentenceId {}", sentenceId);
+                    log.info("Found current sentence ID {} for user {}", sentenceId, userId);
                     return sentenceRepoService.loadSentence(sentenceId)
                             .flatMapMany(sentence -> {
+                                // If user input is NOT Japanese (i.e., Chinese or English), return next sentence directly
                                 if (!CustomStringUtil.containsJapanese(userInput)) {
-                                    // 中文：直接返回“下一句：xxx” 的 token 流
-                                    String content = "下一句：" + sentence;
-                                    return toTokenStream(content, chatReq.getModel(), Boolean.TRUE);
+                                    return handleDirectNextSentence(sentence, chatReq.getModel());
                                 }
 
-                                // 非中文：走 Ollama 评估流程
-//                                ChatRequest llmReq = buildEvaluateRequest();
-                                Flux<OllamaChatResponse> originalLlmStream = ollamaClient.chat(sentence, userInput, chatReq)
-                                        .publish()
-                                        .refCount();
-                                // 同时解析 EvaluationResult（用于数据库操作）
-                                Mono<EvaluationResult> evalMono = originalLlmStream
-                                        .reduce(new LlmAccumulator(), (acc, chunk) -> {
-                                            if (chunk.isDone()) {
-                                                acc.setFinalMetadata(chunk);
-                                            } else {
-                                                String text = Optional.ofNullable(chunk.getMessage())
-                                                        .map(OllamaMessageDTO::getContent)
-                                                        .orElse("");
-                                                acc.appendContent(text);
-                                            }
-                                            return acc;
-                                        })
-                                        .map(LlmAccumulator::toEvaluationResult)
-                                        .cache();
-
-
-                                return evalMono
-                                        .flatMap(eval -> {
-                                            Mono<UserAnswerRecordDO> saveMono =
-                                                    userAnswerRecordRepoService.saveResult(userId, sentenceId, eval.getCorrect());
-
-                                            Mono<SentenceDO> nextSentenceMono = sentenceRepoService.getNextSentence(sentenceId);
-
-                                            Mono<Void> updateMono = nextSentenceMono
-                                                    .flatMap(next -> userRepoService.updateCurrentSentence(userId, next.getId()))
-                                                    .then();
-
-                                            return Mono.when(saveMono, updateMono)
-                                                    .then(nextSentenceMono.map(next ->
-//                                                            {
-                                                                    // 构造最终回复文本，并设置回 eval（或用局部变量）
-//                                                        String finalReply = eval.getModelAnswer() + "\n\n下一句：" + next.getContent();
-//                                                        eval.setModelAnswer(finalReply); // 假设 EvaluationResult 有这个字段
-//                                                        return eval;
-//                                                    }
-                                                                    Tuples.of(eval, eval.getModelAnswer() + "\n\n下一句：" + next.getContent())
-                                                    ));
-                                        })
-                                        .flatMapMany(tuple -> {
-                                            EvaluationResult eval = tuple.getT1();
-                                            String finalReply = tuple.getT2();
-
-                                            Flux<OllamaChatResponse> replyStream = toTokenStream(finalReply, chatReq.getModel(), Boolean.FALSE);
-                                            return replyStream.concatWithValues(eval.getFinalMetadata());
-                                        });
+                                // If user input IS Japanese, process through Ollama for evaluation
+                                return handleJapaneseEvaluation(sentence, userInput, userId, sentenceId, chatReq);
                             });
-
                 })
                 .switchIfEmpty(
+                        // If user has no current sentence, initialize with the first sentence
                         sentenceRepoService.initUserFirstSentence(userId)
-                                .flatMapMany(m -> toTokenStream("下一句：" + m, chatReq.getModel(), Boolean.TRUE))
+                                .flatMapMany(m -> handleDirectNextSentence(m, chatReq.getModel()))
                 );
     }
 
+    /**
+     * Handles the case where the user input is not Japanese (Chinese/English).
+     * Returns a stream of tokens for the next sentence.
+     */
+    private Flux<OllamaChatResponse> handleDirectNextSentence(String sentence, String model) {
+        String content = "下一句：" + sentence;
+        OllamaChatResponse doneFrame = OllamaChatResponse.builder()
+                .message(OllamaMessageDTO.builder().content("").build())
+                .model(model)
+                .createdAt(Instant.now())
+                .done(true)
+                .doneReason("stop")
+                .build();
+        return toTokenStream(content, model)
+                .concatWithValues(doneFrame);
+    }
 
-    private Flux<OllamaChatResponse> toTokenStream(String fullContent, String model, boolean done) {
-        List<String> tokens = CustomStringUtil.splitByLengthStream(fullContent, 5);
+    /**
+     * Handles the complex evaluation flow when the user input is Japanese.
+     * 1. Calls Ollama to evaluate the input against the current sentence.
+     * 2. Accumulates the response to parse EvaluationResult.
+     * 3. Saves the user's answer record.
+     * 4. Gets the next sentence and updates the user's current sentence.
+     * 5. Returns the model's answer combined with the next sentence.
+     */
+    private Flux<OllamaChatResponse> handleJapaneseEvaluation(String currentSentence, String userInput, Long userId, Long sentenceId, ChatRequest chatReq) {
+        // Call Ollama for evaluation
+        Mono<LlmAccumulator> accumMono = ollamaClient.chat(currentSentence, userInput, chatReq)
+                .reduce(new LlmAccumulator(), (acc, chunk) -> {
+                    if (chunk.isDone()) {
+                        acc.setFinalMetadata(chunk);
+                    } else {
+                        String text = Optional.ofNullable(chunk.getMessage())
+                                .map(OllamaMessageDTO::getContent)
+                                .orElse("");
+                        acc.appendContent(text);
+                    }
+                    return acc;
+                })
+                .cache();
 
-        Flux<OllamaChatResponse> tokenFlux = Flux.fromIterable(tokens)
+        // Process the evaluation result: save record, get next sentence, update user state
+        return accumMono
+                .flatMap(accum -> {
+                    Mono<SentenceDO> nextSentenceMono = sentenceRepoService
+                            .getNextSentence(sentenceId)
+                            .cache();
+
+                    Mono<Void> saveMono = userAnswerRecordRepoService
+                            .saveResult(userId, sentenceId, accum.getCorrect())
+                            .then();
+
+                    Mono<Void> updateMono = nextSentenceMono
+                            .flatMap(next -> userRepoService.updateCurrentSentence(userId, next.getId()))
+                            .then();
+
+                    // Wait for save and update to complete, then prepare the final reply
+                    return Mono.when(saveMono, updateMono)
+                            .then(nextSentenceMono)
+                            .map(next -> {
+                                String finalReply = accum.getCleanedAnswer() + "\n\n下一句：" + next.getContent();
+                                return Tuples.of(accum, finalReply);
+                            });
+                })
+                .flatMapMany(tuple -> {
+                    LlmAccumulator accum = tuple.getT1();
+                    String finalReply = tuple.getT2();
+
+                    // Stream the final reply as tokens, then append the final metadata frame
+                    return toTokenStream(finalReply, chatReq.getModel())
+                            .concatWithValues(accum.getFinalMetadata());
+                });
+    }
+
+
+    /**
+     * Converts a full string content into a simulated token stream.
+     * Splits the content into chunks of fixed length and emits them with a small delay.
+     *
+     * @param fullContent The content to stream
+     * @param model       The model name to include in the response
+     * @return A Flux of OllamaChatResponse objects
+     */
+    private Flux<OllamaChatResponse> toTokenStream(String fullContent, String model) {
+        List<String> tokens = CustomStringUtil.splitByLengthStream(fullContent, TOKEN_CHUNK_SIZE);
+
+        return Flux.fromIterable(tokens)
                 .delayElements(Duration.ofMillis(1))
                 .map(token -> OllamaChatResponse.builder()
                         .message(OllamaMessageDTO.builder().content(token).build())
@@ -137,21 +175,6 @@ public class ChatServiceImpl implements IChatService {
                         .done(false)
                         .build()
                 );
-
-        if (!done) {
-            return tokenFlux;
-        }
-
-        OllamaChatResponse doneFrame = OllamaChatResponse.builder()
-                .message(OllamaMessageDTO.builder().content("").build())
-                .model(model)
-                .createdAt(Instant.now())
-                .done(true)
-                .doneReason("stop")
-                .evalCount(tokens.size())
-                .build();
-
-        return tokenFlux.concatWithValues(doneFrame);
     }
 
 }

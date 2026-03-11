@@ -26,34 +26,36 @@ import java.util.TimeZone;
 
 @Slf4j
 public class JsonUtil {
+    /** Shared ObjectMapper instance for JSON processing. */
     public static ObjectMapper objectMapper = new ObjectMapper();
-    static{
-        //去掉默认的时间戳格式
+
+    static {
+        // Disable default timestamp format for dates
         objectMapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-        //设置为中国上海时区
+        // Set timezone to China Shanghai (GMT+8)
         objectMapper.setTimeZone(TimeZone.getTimeZone("GMT+8"));
-        //空值不序列化
+        // Do not serialize null values
         objectMapper.setSerializationInclusion(Include.NON_NULL);
-        //反序列化时，属性不存在的兼容处理
+        // Handle unknown properties during deserialization
         objectMapper.getDeserializationConfig().withoutFeatures(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
         objectMapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, Boolean.TRUE);
-        //单引号处理
+        // Allow single quotes in JSON
         objectMapper.configure(com.fasterxml.jackson.core.JsonParser.Feature.ALLOW_SINGLE_QUOTES, true);
-        //属性大小写不敏感
+        // Accept case-insensitive property names
         objectMapper.configure(MapperFeature.ACCEPT_CASE_INSENSITIVE_PROPERTIES, true);
 
-        // 下面配置解决LocalDateTime序列化的问题
+        // Configure LocalDateTime serialization
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         JavaTimeModule javaTimeModule = new JavaTimeModule();
 
-        //日期序列化
+        // Date serializers
         javaTimeModule.addSerializer(LocalDateTime.class, new LocalDateTimeSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         javaTimeModule.addSerializer(LocalDate.class, new LocalDateSerializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         javaTimeModule.addSerializer(LocalTime.class, new LocalTimeSerializer(DateTimeFormatter.ofPattern("HH:mm:ss")));
 
-        //日期反序列化
+        // Date deserializers
         javaTimeModule.addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         javaTimeModule.addDeserializer(LocalDate.class, new LocalDateDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
         javaTimeModule.addDeserializer(LocalTime.class, new LocalTimeDeserializer(DateTimeFormatter.ofPattern("HH:mm:ss")));
@@ -61,6 +63,13 @@ public class JsonUtil {
         objectMapper.registerModule(javaTimeModule);
     }
 
+    /**
+     * Converts a JSON string to an object of the specified class.
+     * @param json The JSON string
+     * @param clazz The class of the object
+     * @param <T> The type of the object
+     * @return The deserialized object, or null if an error occurs
+     */
     public static <T> T toObject(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
@@ -70,6 +79,12 @@ public class JsonUtil {
         return null;
     }
 
+    /**
+     * Converts an object to a JSON string.
+     * @param entity The object to serialize
+     * @param <T> The type of the object
+     * @return The JSON string, or null if an error occurs
+     */
     public static <T> String toJson(T entity) {
         try {
             return objectMapper.writeValueAsString(entity);
@@ -79,6 +94,14 @@ public class JsonUtil {
         return null;
     }
 
+    /**
+     * Converts a JSON array string to a list of objects.
+     * @param jsonArrayStr The JSON array string
+     * @param clazz The class of the objects in the list
+     * @param <T> The type of the objects
+     * @return A list of deserialized objects
+     * @throws Exception If an error occurs during deserialization
+     */
     public static <T> List<T> json2list(String jsonArrayStr, Class<T> clazz)
             throws Exception {
         List<Map<String, Object>> list = (List<Map<String, Object>>) objectMapper.readValue(jsonArrayStr,
@@ -90,12 +113,25 @@ public class JsonUtil {
         }
         return result;
     }
+
+    /**
+     * Converts a Map to a Plain Old Java Object (POJO).
+     * @param map The map to convert
+     * @param clazz The class of the POJO
+     * @param <T> The type of the POJO
+     * @return The deserialized POJO
+     */
     public static <T> T map2pojo(Map map, Class<T> clazz) {
         return objectMapper.convertValue(map, clazz);
     }
 
 
-    //对象转json字符串
+    /**
+     * Converts an object to a JSON string (compact format).
+     * @param obj The object to serialize
+     * @param <T> The type of the object
+     * @return The JSON string, or null if an error occurs
+     */
     public static <T> String obj2String(T obj){
         if(obj == null){
             return null;
@@ -107,7 +143,13 @@ public class JsonUtil {
             return null;
         }
     }
-    //对象转json字符串 重载方法 格式化的jaon字符串 方便调试 实际开发取第一种方法
+
+    /**
+     * Converts an object to a pretty-printed JSON string (formatted for debugging).
+     * @param obj The object to serialize
+     * @param <T> The type of the object
+     * @return The formatted JSON string, or null if an error occurs
+     */
     public static <T> String obj2StringPretty(T obj){
         if(obj == null){
             return null;
@@ -120,10 +162,13 @@ public class JsonUtil {
         }
     }
 
-
-
-
-    //json字符串转对象转
+    /**
+     * Converts a JSON string to an object.
+     * @param str The JSON string
+     * @param clazz The class of the object
+     * @param <T> The type of the object
+     * @return The deserialized object, or null if an error occurs
+     */
     public static <T> T string2Obj(String str,Class<T> clazz){
         if(!StringUtils.hasLength(str) || clazz == null){
             return null;
@@ -137,7 +182,14 @@ public class JsonUtil {
         }
     }
 
-    //json字符串转list<T>对象   和上面的一样
+    /**
+     * Converts a JSON string to a generic collection (e.g., List&lt;T&gt;).
+     * @param str The JSON string
+     * @param collectionClass The collection class (e.g., List.class)
+     * @param elementClasses The element classes in the collection
+     * @param <T> The type of the elements
+     * @return The deserialized collection, or null if an error occurs
+     */
     public static <T> T string2Obj(String str,Class<?> collectionClass,Class<?>... elementClasses){
         JavaType javaType = objectMapper.getTypeFactory().constructParametricType(collectionClass,elementClasses);
         try {
@@ -148,6 +200,14 @@ public class JsonUtil {
         }
     }
 
+    /**
+     * Converts a JSON string to an object of a generic type.
+     * @param jsonStr The JSON string
+     * @param targetType The target type (e.g., new TypeReference&lt;List&lt;MyClass&gt;&gt;() {})
+     * @param <T> The type of the object
+     * @return The deserialized object
+     * @throws IllegalArgumentException If an error occurs during deserialization
+     */
     public static <T> T json2obj(String jsonStr, Type targetType) {
         try {
             JavaType javaType = TypeFactory.defaultInstance().constructType(targetType);

@@ -1,5 +1,8 @@
 package com.recall.config;
 
+/**
+ * Configuration class for custom route locators (currently commented out).
+ */
 public class RouteLocatorConfig {
     //    @Bean
 //    public RouteLocator customRoutes(RouteLocatorBuilder builder){

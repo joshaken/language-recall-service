@@ -10,9 +10,17 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 
+/**
+ * Configuration class for routing HTTP requests to handlers.
+ */
 @Configuration
 public class RoutingConfig {
 
+    /**
+     * Defines the routing rules for chat requests.
+     * @param proxyHandler The proxy handler instance
+     * @return The router function
+     */
     @Bean
     public RouterFunction<ServerResponse> fun(ProxyHandler proxyHandler) {
         return RouterFunctions.route(

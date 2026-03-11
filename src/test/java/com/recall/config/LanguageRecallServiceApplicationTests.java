@@ -89,13 +89,13 @@ class LanguageRecallServiceApplicationTests {
         when(userRepoService.findUserCurrentSentence(1L)).thenReturn(Mono.just(1L));
         when(sentenceRepoService.loadSentence(1L)).thenReturn(Mono.just("你好"));
         when(sentenceRepoService.getNextSentence(1L)).thenReturn(Mono.just(new SentenceDO(2L, "再见")));
-        when(userAnswerRecordRepoService.saveResult(eq(1L), eq(1L), eq(false))).thenReturn(Mono.just(new UserAnswerRecordDO()));
+        when(userAnswerRecordRepoService.saveResult(eq(1L), eq(1L), eq(Boolean.FALSE))).thenReturn(Mono.just(new UserAnswerRecordDO()));
         when(userRepoService.updateCurrentSentence(eq(1L), eq(2L))).thenReturn(Mono.empty());
         when(sentenceRepoService.initUserFirstSentence(1L)).thenReturn(Mono.just("你好1"));
 
         ChatRequest req = new ChatRequest();
         req.setModel("llama3");
-        req.setMessages(List.of(OllamaMessageDTO.builder().role("user").content("こんにちは").build())); // 日语
+        req.setMessages(List.of(OllamaMessageDTO.builder().role("user").content("こんにちは").build()));
 
         Flux<OllamaChatResponse> result = chatService.chat(req);
 

@@ -10,6 +10,9 @@ import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
+/**
+ * Implementation of UserAnswerRecordRepoService for database operations.
+ */
 @Service
 @Slf4j
 public class UserAnswerRecordRepoServiceImpl implements UserAnswerRecordRepoService {
@@ -19,6 +22,13 @@ public class UserAnswerRecordRepoServiceImpl implements UserAnswerRecordRepoServ
     private UserAnswerRecordRepository repository;
 
 
+    /**
+     * Saves the result of a user's answer.
+     * @param userId The ID of the user
+     * @param sentenceId The ID of the sentence answered
+     * @param correct Whether the answer was correct
+     * @return A Mono emitting the saved record
+     */
     @Override
     public Mono<UserAnswerRecordDO> saveResult(Long userId, Long sentenceId, Boolean correct) {
         log.info("userId[{}},sentenceId[{}],correct[{}]", userId, sentenceId, correct);
